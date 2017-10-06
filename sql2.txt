@@ -1,0 +1,460 @@
+______________________________________Rep Parcial______________________________________
+1. Tablas particionadas
+·Crear la función de partición con el rango right para los límites 500,000, 5’000,0000, 50’000,000.
+·Crear el esquema de partición usando la función creada en el paso anterior.
+·Crear la tabla Personas en el esquema de partición creado en el paso anterior, considerar las siguientes columnas para la tabla:
+o  id int
+o  nombreCompleto varchar (150)
+o  fechaNacimiento date
+·Crear la tabla PersonasHistorica a donde moverá los datos de la tabla Persona correspondientes a la partición 1.
+·Realizar un merge en la tabla Persona para el valor 5’000,0000
+·Realizar un Split para la tabla Persona  para el valor 80’000,000.
+
+Solución:
+CREATE PARTITION FUNCTION pf_parcial01 (int)
+AS RANGE RIGHT
+FOR VALUES ('500000','5000000','50000000')
+GO
+
+CREATE PARTITION SCHEME ps_parcial01
+AS PARTITION pf_parcial01
+TO ('Parcial_01','Parcial_02','Parcial_03','Parcial_04')
+GO
+ 
+CREATE TABLE personas(
+   	id int NOT NULL,
+   	nombreCompleto VARCHAR(150) NOT NULL,
+   	fechaNacimiento DATE NULL
+) ON ps_parcial01(id)
+GO
+ 
+CREATE TABLE personasHistorica(
+   	id int NOT NULL,
+   	nombreCompleto VARCHAR(150) NOT NULL,
+   	fechaNacimiento DATE NULL
+) ON Parcial_01
+GO
+ 
+alter table personas
+switch partition 1
+to personasHistorica
+GO
+ 
+alter partition function pf_parcial01()
+merge range ('5000000')
+GO
+ 
+alter PARTITION SCHEME ps_parcial01 next used Parcial_05
+alter partition function pf_parcial01() split range ('80000000')
+GO
+ 
+DECLARE @TableName sysname = 'personas';
+ 
+SELECT OBJECT_NAME([object_id]) AS table_name, p.partition_number, fg.name, p.rows
+FROM sys.partitions p INNER JOIN sys.allocation_units au
+ON au.container_id = p.hobt_id INNER JOIN sys.filegroups fg
+ON fg.data_space_id = au.data_space_id
+WHERE p.object_id = OBJECT_ID(@TableName)
+GO
+--------------------------------------------
+2. Genere el Siguente XML
+<ListadoClientes>
+  <Cliente ID="4">
+    <Detalle Nombre="Kimberly">
+      <Genero>Femenino</Genero>
+    </Detalle>
+    <Venta ID="3">
+      <Total>3876.00</Total>
+      <Fecha>2014-09-23T00:00:00</Fecha>
+    </Venta>
+</ListadoClientes>
+
+Solución:
+select
+   	c.id as "@ID",
+   	c.nombres + ' ' + c.apellidos as "Detalle/@Nombre",
+   	case sexo when 0 then 'Femenino' when 1 then 'Masculino' end as "Detalle/Genero",
+   	v.id as "Venta/@ID",
+   	v.total as "Venta/Total",
+   	v.fecha as "Venta/Fecha"
+from clientes c
+inner join ventas v on v.cliente_id=c.id
+for xml path ('Cliente') , root('ListadoClientes')
+
+______________________________________Clase 4______________________________________
+---------------HEAP----------------
+Use semana06
+CREATE TABLE TablaHeap(
+   	id INT NOT NULL,
+   	campo1 CHAR(250) NOT NULL
+);
+-------------------------------
+INSERT INTO dbo.TablaHeap (id, campo1) VALUES (1, 'a');
+-------------------------------
+DECLARE @i AS int = 1;
+WHILE @i < 30
+BEGIN
+SET @i = @i + 1;
+INSERT INTO dbo.TablaHeap (id, campo1) VALUES (@i, 'a');
+END;
+-------------------------------
+INSERT INTO dbo.TablaHeap (id, campo1) VALUES (31, 'a');
+-------------------------------
+DECLARE @i AS int = 241;
+WHILE @i < 480
+BEGIN
+SET @i = @i + 1;
+INSERT INTO dbo.TablaHeap (id, campo1) VALUES (@i, 'a');
+END;
+-------------------------------
+INSERT INTO dbo.TablaHeap (id, campo1) VALUES (481, 'a');
+------------------------------- Consultas
+SELECT OBJECT_NAME(object_id) AS table_name, name AS index_name, type, type_desc
+FROM sys.indexes WHERE object_id = OBJECT_ID('TablaHeap')
+EXEC dbo.sp_spaceused @objname = N'dbo.TablaHeap', @updateusage = true;
+SELECT index_type_desc, page_count, record_count, avg_page_space_used_in_percent
+FROM sys.dm_db_index_physical_stats (DB_ID(N'semana06'), OBJECT_ID(N'dbo.TablaHeap'), NULL, NULL , 'DETAILED');
+
+---------------CLUSTERED----------------
+CREATE TABLE TablaClustered(
+   	id INT NOT NULL,
+   	campo1 CHAR(250) NOT NULL
+);
+CREATE CLUSTERED INDEX idx_clus_id ON dbo.TablaClustered(id);
+-------------------------------
+DECLARE @i AS int = 0;
+WHILE @i < 18630
+BEGIN
+SET @i = @i + 1;
+INSERT INTO dbo.TablaClustered (id, campo1) VALUES (@i, 'a');
+END;
+-------------------------------
+INSERT INTO dbo.TablaClustered (id, campo1) VALUES (18631, 'a');
+------------------------------- Consultas
+SELECT OBJECT_NAME(object_id) AS table_name, name AS index_name, type, type_desc
+FROM sys.indexes WHERE object_id = OBJECT_ID('TablaClustered')
+ 
+SELECT page_type, page_type_desc, page_level, next_page_page_id, previous_page_page_id FROM sys.dm_db_database_page_allocations(DB_ID(), OBJECT_ID('TablaClustered'), 1, NULL, 'DETAILED') WHERE is_allocated = 1;
+GO
+ 
+SELECT index_type_desc, index_depth, index_level, page_count, record_count, avg_page_space_used_in_percent
+FROM sys.dm_db_index_physical_stats (DB_ID(N'semana06'), OBJECT_ID(N'dbo.TablaClustered'), NULL, NULL , 'DETAILED');
+ 
+EXEC dbo.sp_spaceused @objname = N'dbo.TablaClustered', @updateusage = true;
+
+---------------Crear CLUSTERED----------------
+USE Semana06
+GO
+CREATE TABLE dbo.TablaIndClustered1(
+   	id int identity NOT NULL,
+   	nombres varchar(75) NULL,
+   	apellidos varchar(75) NULL
+);
+GO
+-------------------------------
+CREATE CLUSTERED INDEX ix_Clustered1_Col1
+ON dbo.TablaIndClustered1 (id)
+WITH (FILLFACTOR = 80, ONLINE = ON);
+GO
+-------------------------------
+SELECT OBJECT_NAME(object_id) AS table_name, name AS index_name, type, type_desc FROM sys.indexes WHERE object_id = OBJECT_ID('TablaIndClustered1')
+-------------------------------
+INSERT INTO TablaIndClustered1 (nombres, apellidos)
+VALUES('Ken', 'Sánchez');
+INSERT INTO TablaIndClustered1 (nombres, apellidos)
+VALUES('Terri', 'Duffy');
+INSERT INTO TablaIndClustered1 (nombres, apellidos)
+VALUES('Roberto', 'Tam');
+INSERT INTO TablaIndClustered1 (nombres, apellidos)
+VALUES('Rob', 'Walters');
+INSERT INTO TablaIndClustered1 (nombres, apellidos)
+VALUES('Jossef', 'Gold');
+-------------------------------
+SELECT * FROM TablaIndClustered1
+-------------------------------
+DROP INDEX ix_Clustered1_Col1 ON TablaIndClustered1;
+-------------------------------
+DELETE FROM TablaIndClustered1;
+-------------------------------
+CREATE CLUSTERED INDEX ix_Clustered1_Col1
+ON dbo.TablaIndClustered1 (nombres)
+WITH (FILLFACTOR = 80, ONLINE = ON);
+GO
+-------------------------------
+SELECT OBJECT_NAME(object_id) AS table_name, name AS index_name, type, type_desc FROM sys.indexes WHERE object_id = OBJECT_ID('TablaIndClustered1')
+-------------------------------
+INSERT INTO TablaIndClustered1 (nombres, apellidos)
+VALUES('Ken', 'Sánchez');
+INSERT INTO TablaIndClustered1 (nombres, apellidos)
+VALUES('Terri', 'Duffy');
+INSERT INTO TablaIndClustered1 (nombres, apellidos)
+VALUES('Roberto', 'Tam');
+INSERT INTO TablaIndClustered1 (nombres, apellidos)
+VALUES('Rob', 'Walters');
+INSERT INTO TablaIndClustered1 (nombres, apellidos)
+VALUES('Jossef', 'Gold');
+-------------------------------
+SELECT * FROM TablaIndClustered1
+
+---------------INDEX REBUILD / REORGANIZE----------------
+Use Semana06
+GO
+CREATE TABLE TablaClusteredRebuild(
+   	id INT NOT NULL,
+   	campo1 CHAR(250) NOT NULL
+);
+CREATE CLUSTERED INDEX idx_clusrb_id ON dbo.TablaClusteredRebuild(campo1);
+-------------------------------
+DECLARE @i AS int = 0;
+WHILE @i < 9000
+BEGIN
+SET @i = @i + 1;
+INSERT INTO dbo.TablaClusteredRebuild (id, campo1) VALUES (@i, CAST(NEWID() AS CHAR(36)));
+END;
+-------------------------------
+Drop table dbo.TablaClusteredRebuild
+-------------------------------
+ 
+------------------------------- Consultas
+SELECT index_level, name, page_count, avg_page_space_used_in_percent, avg_fragmentation_in_percent
+FROM sys.dm_db_index_physical_stats  (DB_ID(N'Semana06'),
+OBJECT_ID(N'dbo.TablaClusteredRebuild '), NULL, NULL , 'DETAILED')
+ips INNER JOIN sys.indexes i ON ips.object_id = i.object_id AND
+ips.index_id = i.index_id
+ 
+ALTER INDEX idx_clusrb_id ON TablaClusteredRebuild
+REBUILD
+ 
+ALTER INDEX idx_clusrb_id ON TablaClusteredRebuild
+REORGANIZE
+______________________________________Clase 3______________________________________
+------------------------------ RAW ------------------------------
+select * from categorias
+ 
+select * from categorias
+for xml raw
+ 
+select * from categorias
+for xml raw, root('Categorias')
+ 
+select * from categorias
+for xml raw, elements, root('Categorias')
+ 
+select c.nombre as categoria, p.nombre as producto
+from productos p
+inner join categorias c on p.categoria_id=c.id
+for xml raw, root('Categorias')
+
+------------------------------ AUTO ------------------------------
+select categorias.nombre as categoria, productos.nombre as producto
+from productos as productos
+inner join categorias as categorias on productos.categoria_id=categorias.id
+for xml auto, root('Categorias')
+
+------------------------------ PATH ------------------------------
+select c.id as "@ID", c.nombre as "@Nombre",
+   	c.nombre as "NombreCategoria",
+   	p.id as "Producto/@ID",
+   	p.precio as "Producto/@Precio",
+   	p.stock as "Producto/@Stock",
+   	p.nombre as "Producto/NombreProducto"
+from categorias c
+inner join productos p on p.categoria_id=c.id
+for xml path ('Categoria') , root('ARRAYOFPRODUCTS')
+
+select p.id as "@Codigo",
+   	p.nombre as "Detalle/Nombre",
+   	p.precio as "Detalle/Precio/@Soles",
+   	c.nombre as "Detalle/Categoria"
+from categorias c
+inner join productos p on p.categoria_id=c.id
+for xml path ('Producto') , root('Datos')
+
+------------------------------ Verificar estructura de XML ------------------------------
+declare @intXML int;
+declare @textXML varchar(max);
+set @textXML='<Sucursal01 codigo="S01">
+         	<Pedidos cliente_id="2">
+                	<fecha>2014-09-11 08:30:00</fecha>
+                	<total>906.00</total>
+                	<subtotal>767.80</subtotal>
+                	<igv>138.20</igv>
+         	</Pedidos>
+         	<Pedidos cliente_id="5">
+                	<fecha>2014-09-11 15:40:00</fecha>
+                	<total>920.00</total>
+                	<subtotal>779.66</subtotal>
+                	<igv>140.34</igv>
+         	</Pedidos>
+         	<Pedidos cliente_id="5">
+                	<fecha>2014-09-11 19:20:00</fecha>
+                	<total>944.00</total>
+                	<subtotal>800.00</subtotal>
+                	<igv>144.00</igv>
+         	</Pedidos>
+         	<Pedidos cliente_id="1">
+                	<fecha>2014-09-11 11:10:00</fecha>
+                	<total>722.00</total>
+                	<subtotal>611.86</subtotal>
+                	<igv>110.14</igv>
+         	</Pedidos>
+         	<Pedidos cliente_id="4">
+                	<fecha>2014-09-11 13:10:00</fecha>
+                	<total>879.00</total>
+                	<subtotal>744.92</subtotal>
+                	<igv>134.08</igv>
+         	</Pedidos>
+</Sucursal01>';
+exec sp_xml_preparedocument @intXML output, @textXML;
+--insert into pedidos1 --(Una vez verificado se inserta)
+select * from openxml (@intXML, 'Sucursal01/Pedidos', 3) -- with pedidos1 --(Una tabla que ya esta)
+with (
+   	total decimal(9,2) 'total',
+   	cliente int '@cliente_id',
+   	sucursal char(3) '../@codigo'
+   	)
+
+------------------------------ XQuery ------------------------------
+declare @dataXml as xml
+set @dataXml = '<Sucursal01>
+         	<Pedidos cliente_id="2">
+                	<fecha>2014-09-11</fecha>
+                	<total>906.00</total>
+                	<subtotal>767.80</subtotal>
+                	<igv>138.20</igv>
+         	</Pedidos>
+         	<Pedidos cliente_id="5">
+                	<fecha>2014-09-11</fecha>
+                	<total>920.00</total>
+                	<subtotal>779.66</subtotal>
+                	<igv>140.34</igv>
+         	</Pedidos>
+         	<Pedidos cliente_id="5">
+                	<fecha>2014-09-11</fecha>
+                	<total>944.00</total>
+                	<subtotal>800.00</subtotal>
+                	<igv>144.00</igv>
+         	</Pedidos>
+         	<Pedidos cliente_id="1">
+                	<fecha>2014-09-11</fecha>
+                	<total>722.00</total>
+                	<subtotal>611.86</subtotal>
+                	<igv>110.14</igv>
+         	</Pedidos>
+         	<Pedidos cliente_id="4">
+                	<fecha>2014-09-11</fecha>
+                	<total>879.00</total>
+                	<subtotal>744.92</subtotal>
+                	<igv>134.08</igv>
+         	</Pedidos>
+</Sucursal01>'
+ 
+select @dataXml.query('*') -- Para ver todo el XML
+select @dataXml.query('data(*)') -- Para ver todos los datos del XML
+select @dataXml.query('data(Sucursal01/Pedidos/total)') -- Para consultar todos los totales
+select @dataXml.exist('Sucursal01/Pedidos/total') -- Para ver si existe elementos
+select @dataXml.exist('//.[text()="2014-09-11"]') -- Para ver si existe el Texto
+ 
+------------------------------ Método - Max Min Avg Count  ------------------------------
+select @dataXml.query('
+   	for $i in //imagenes
+   	return
+   	<Info>
+         	<MenorPeso>{min($i/imagen/peso)}</MenorPeso>
+         	<MayorPeso>{max($i/imagen/peso)}</MayorPeso>
+         	<PesoProm>{avg($i/imagen/peso)}</PesoProm>
+         	<Numero>{count($i/imagen/peso)}</Numero>
+	<Total>{sum($i/Puntos}</Total>
+   	</Info>
+') from noticias
+where id=2
+______________________________________Clase 2______________________________________
+--------------- Crear la Funcion de Particion ---------------
+
+CREATE PARTITION FUNCTION pf_funcion01 (char(10))
+AS RANGE RIGHT
+FOR VALUES ('U201300001','U201400001','u201500001')
+
+--------------- Crear el Esquema de la Particion ---------------
+
+CREATE PARTITION SCHEME ps_esquema01
+AS PARTITION pf_funcion01
+TO ('grupo01','grupo02','grupo03','grupo04')
+
+--------------- Crear la Tabla con el Esquema de la Particion ---------------
+
+CREATE TABLE alumnos(
+	codigo CHAR(10) NOT NULL,
+	nombres VARCHAR(75) NOT NULL,
+	apellidos VARCHAR(75) NOT NULL,
+	nacimiento DATE NULL
+) ON ps_esquema01(codigo)
+
+--------------- Ver los Valores en la Tabla ---------------
+
+select * from alumnos
+
+--------------- Agregar Valores a la Tabla ---------------
+
+insert into alumnos values('U201200010','Pedro','Arteaga','19900101')
+insert into alumnos values('U201300010','Emily','DeLaCruz','19900101')
+insert into alumnos values('U201400010','Bruno','Albin','19900101')
+insert into alumnos values('U201500010','Alfredo','Rasmussen','19900101')
+
+--------------- Consultar los alumnos en los FileGroups ---------------
+
+DECLARE @TableName sysname = 'alumnos';
+SELECT OBJECT_NAME([object_id]) AS table_name, 
+p.partition_number, fg.name, p.rows FROM sys.partitions p 
+INNER JOIN sys.allocation_units au 
+ON au.container_id = p.hobt_id 
+INNER JOIN sys.filegroups fg 
+ON fg.data_space_id = au.data_space_id 
+WHERE p.object_id = OBJECT_ID(@TableName)
+
+--------------- Para Hacerle Particiones a Una Tabla ya Creada ---------------
+
+Alter table alumnos
+ADD CONSTRAINT [PK_alumnos_codigo]
+PRIMARY KEY CLUSTERED
+(
+  codigo
+) ON ps_esquema01(codigo)
+
+--------------- Crear una tabla en una particion ---------------
+
+CREATE TABLE alumnosHistorica(
+	codigo CHAR(10) NOT NULL,
+	nombres VARCHAR(75) NOT NULL,
+	apellidos VARCHAR(75) NOT NULL,
+	nacimiento DATE NULL
+) ON grupo02
+
+--------------- Mover la información de una tabla en una partición a otra tabla ---------------
+
+alter table alumnos
+switch partition 2
+to alumnosHistorica
+
+--------------- Creamos una partición adicional ---------------
+
+(Modificar antes la base de datos y agregar grupo05)
+alter PARTITION SCHEME ps_esquema01 next used grupo05
+alter partition function pf_funcion01() split range ('201600001')
+
+--------------- Juntamos una partición ---------------
+
+alter partition function pf_funcion01() merge range ('201400001')
+
+--------------- Creamos un SnapShot ---------------
+
+Create database Semana02_SS
+on
+(	name='Semana02',	filename='E:\Semana02_Data.ss'	),
+(	name='Semana02_01',	filename='E:\Semana02_01_Data.ss'	),
+(	name='Semana02_02',	filename='E:\Semana02_02_Data.ss'	),
+(	name='Semana02_03',	filename='E:\Semana02_03_Data.ss'	),
+(	name='Semana02_04',	filename='E:\Semana02_04_Data.ss'	),
+(	name='Semana02_05',	filename='E:\Semana02_05_Data.ss'	)
+as snapshot of Semana02
+
