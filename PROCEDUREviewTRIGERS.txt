@@ -1,0 +1,135 @@
+create PROCEDURE dbo.Sample_Procedure5
+    @pname varchar(20),
+    @numProd int,
+    @idreturn int OUTPUT 
+AS
+  Begin try
+    insert into categorias values(@pname,@numProd) 
+	select @idreturn = SCOPE_IDENTITY();
+	print '1'
+	RETURN 
+  END TRY
+  begin CAtch
+  print '0'
+  RETURN 
+  END CAtch
+
+
+----------------------------------------------------------------------------------
+
+CREATE VIEW dbo.Sample_View
+WITH schemabinding 
+AS
+    SELECT 
+	C.NOMBRES,
+	C.APELLIDOS,
+	PC.precio
+	FROM 
+	[dbo].[productos_clientes] PC
+	inner join
+	[dbo].[clientes] c
+	ON PC.cliente_id = c.id 
+-------------------------------------------------------------------------------------
+CREATE TRIGGER tr_ProductosUDT
+    ON [dbo].[productos]
+    FOR  update 
+    AS
+    BEGIN
+
+	if exists (select * from inserted)
+	begin
+		if exists (select * from deleted)
+		begin
+
+				declare @id1 int
+				set @id1 = (select categoria_id from deleted)
+
+				declare @id2 int
+				set @id2 = (select categoria_id from inserted)
+
+
+			  update categorias set numeroProductos = numeroProductos-1 where id = @id1
+			  update categorias set numeroProductos = numeroProductos+1 where id = @id2
+
+
+		END
+	END
+	END
+------------------------------------------------------------------------------------------------------
+
+CREATE TRIGGER tr_Productos
+    ON [dbo].[productos]
+    FOR  INSERT
+    AS
+    BEGIN
+		declare @id int
+		set @id = (select categoria_id from inserted)
+
+      update categorias set numeroProductos = numeroProductos+1
+		where id = @id
+
+
+	END
+
+----------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER tr_ProductosEli
+    ON [dbo].[productos]
+    FOR  delete
+    AS
+    BEGIN
+		declare @id int
+		set @id = (select categoria_id from deleted)
+
+      update categorias set numeroProductos = numeroProductos-1
+		where id = @id
+
+
+	END
+---------------------------------------------------------------------------------------------------------------
+
+CREATE FUNCTION [dbo].[FunctionName]
+(
+    @param1 DECIMAL
+
+)
+RETURNS DECIMAL
+AS
+BEGIN
+    declare @monto decimal
+	if(@param1 <700)
+		begin 
+		set @monto = 0
+		end
+	else
+		begin
+		set @monto = @param1 * 0.1
+		end
+
+return @monto
+END
+
+select [dbo].[FunctionName](1180)
+
+
+
+
+CREATE FUNCTION fn_pedidosDetraccion
+(
+      @param1 DECIMAL
+)
+RETURNS TABLE AS RETURN
+(
+    select
+		c.nombres, 
+		v.fecha,
+		v.total,
+		[dbo].[FunctionName](v.total) as 'Monto de detracción' 
+		from 
+		clientes c 
+		Inner join 
+		ventas v 
+		ON
+		C.id = V.cliente_id
+		where [dbo].[FunctionName](v.total) > @param1
+)
+
