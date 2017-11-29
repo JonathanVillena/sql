@@ -1,0 +1,177 @@
+Logros del día
+•	Al final del día, el alumno estará en la capacidad de:
+•	Hacer uso de vistas para dar acceso a la información de la base de datos sin conceder permisos directos a las tablas.
+•	Hacer uso de triggers para ejecutar lógicas antes y en lugar de las consultas que se envían a las tablas.
+•	Utilizar storedprocedures para almacenar consultas que pueden reusarse por varias aplicaciones.
+•	Crear funciones para obtener valores o conjuntos de filas que pueden usarse dentro de consultas SQL.
+
+Vistas
+Definiciones y crear vistas
+Concepto
+•	Es una tabla virtual que contiene columnas y filas, se genera en base al resultado de una consulta SQL.
+•	Las vistas pueden estar compuesta por los datos de una o más tablas.
+
+Uso
+•	Permite simplificar la complejidad de la base de datos de acuerdo con el requerimiento de los usuarios.
+•	Se puede usar como mecanismo de seguridad, puesto que sólo es necesario dar permisos a las vistas y no a las tablas base.
+•	Permite manejar cambios de estructura en las tablas base sin que los usuarios se vean afectados, debido a que solo utilizan las vistas y no conocen la estructura de las tablas base.
+
+Consideraciones
+-El orden de los datos no está garantizado, sólo es posible utilizar ORDER BY cuando en la sentencia se usa la cláusula TOP.
+-Todas las columnas deben de tener un nombre.
+-Los nombres de las columnas deben ser únicos.
+
+Sintaxis
+ 
+Triggers
+Definiciones, crear y utilizar triggers
+ 
+Concepto
+•	Los triggers son un tipo especial de procedimiento almacenado.
+•	Se ejecutan automáticamente cuando una consulta DML afecta a una tabla o vista para la cual ha sido definida el trigger.
+•	El trigger y la consulta que provoca su ejecución, son tratadas como una única transacción, que, de ser necesario, puede ser revertida desde el trigger.
+
+
+
+Uso
+Se pueden hacer uso de triggers para:
+•	Para forzar una regla de negocio.
+•	Mantener la integridad de datos.
+•	Consultar otras tablas.
+•	Incluir consultas complejas.
+ 
+Tipos
+•	AFTER
+Se ejecutan después que la sentencia SQL ha sido realizada.
+•	No se ejecutan si ocurre un error al comprobar las restricciones definidas de la tabla.
+•	INSTEAD OF
+Anulan las sentencias SQL que han generado su ejecución.
+Son ideales para revisar valores o realizar acciones adicionales antes de ejecutar la sentencia DML.
+•	CLR
+Pueden ser AFTER o INSTEAD OF. Ejecutan uno o más métodos escritos en código administrado que son parte de un assembly.
+ 
+
+Storedprocedure
+Concepto
+•	Son un conjunto de sentencias SQL que:
+•	Aceptan el envío de parámetros de entrada y salida
+•	Contienen una sentencia o grupo de sentencias
+•	Permiten ejecutar otros storedprocedures
+
+Beneficios
+•	El uso, nos ayuda a reducir el tráfico de red entre el cliente y servidor.
+•	A nivel de seguridad, nos ayuda a evitar las inyecciones SQL.
+•	Nos permiten reutilización de código (sentencias SQL).
+•	Al tener el código centralizado, nos permite un mantenimiento más fácil.
+•	Nos mejora el rendimiento de las consultas al trabajar con consultas pre compiladas.
+
+Recomendaciones
+•	Utilizar SET NOCOUNT ON para desactivar los mensajes devueltos por SQL Server.
+•	Evitar el procesamiento o la devolución de muchos datos.
+•	Usar las transacciones de forma explícita usando BEGIN/END TRANSACTION.
+•	Tener transacciones cortas para evitar bloqueos de registros por mucho tiempo.
+•	Usar TRY CATCH para controlar errores en el procedure.
+ 
+ 
+
+Funciones
+Concepto
+•	Las funciones de usuarios son similares a los storedprocedure, recibe datos y producen un resultado.
+•	Pero, a diferencia de los storedprocedure, las funciones pueden ser incluidas dentro de las sentencias SQL.
+•	Tipo de funciones:
+o	Funciones escalares
+o	Funciones con valores de tabla en línea
+ 
+ 
+
+
+Reporting services
+Definición
+•	SSRS es una plataforma de reportes basada en servidorque nos permite generar reportes desde varios orígenes de datos.
+•	Las herramientas y servicios de SSRS permiten crear, implementar y administrar reportes.
+•	Para la visualización de los reportes se pueden usar diagramas, mapas y mini gráficos.
+Reportingservices
+•	SSRS nos proporciona dos entornos de creación de informes:
+o	ReportDesigner
+o	ReportBuilder
+•	Una definición de un reporte es un archivo XML que contiene información sobre:
+o	Los orígenes de datos
+o	Los datos del reporte, y
+o	El diseño del reporte
+Reportes
+•	Tienen una extensión RDL.
+•	La definición del reporte no contiene datos.
+•	Cuando es procesado, los datos y el diseño son combinados para ser enviados a presentación.
+
+Fases de los reportes
+•	Procesamiento del informe (definición del informe, .rdl)
+•	Procesamiento de los datos (definición del informe), los resultados pasan a un formato intermedio.
+•	Representación, el formato intermedio a un formato de visualización.
+
+
+ReportBuilder
+•	Es un entorno de creación de informes destinado a los usuarios que prefieren trabajar en un entorno del tipo Microsoft Office.
+•	Para diseñar un reporte es necesario es necesario:
+o	Especificar de dónde se obtienen los datos
+o	Qué tipos de datos se obtienen
+o	Cómo se van a mostrar los datos
+
+Data Sources
+•	Una data source proporciona detalles acerca de cómo conectarse a un origen de datos.
+•	Hay dos tipos de orígenes de datos:
+o	Incrustados
+o	Compartidos.
+o	Cada origen de datos especifica el tipo de origen de datos, la cadena de conexión y las credenciales.
+Datasets
+•	Un datasetespecifica los campos del origen de datos que se van a usar en el informe.
+•	Un datasetcontiene un puntero al origen de datos, parámetros de consulta y opciones de datos.
+Parámetros
+•	Existen dos tipos de parámetros:
+o	Parámetros de consulta (query
+Sirven para filtrar las filas retornadas al reporte.
+o	Parámetros de reportes (report)
+Permiten personalizar el contenido o la apariencia de un reporte.
+•	Permiten limitar el resultado devuelto al reporte.
+•	Dentro de la consulta del Datasetse utiliza el signo @dentro de la cláusula WHERE.
+Copias de seguridad
+•	El objetivo de realizar una copia de seguridad a una base de datos es que pueda ser recuperada cuando ocurra una pérdida de datos o no pueda ser accedida ante algún desastre.
+•	Al realizar copias de seguridad se busca minimizar la pérdida de datos, pero hay que definir correctamente el tipo y frecuencia de las copias de seguridad.
+Modelos de recuperación
+•	Al definir el modelo de recuperación de una base de datos, básicamente se define como se administra el log de transacciones de una base de datos.
+•	Los modos de recuperación de una base de datos son:
+o	Full
+Todo se registra.
+o	Bulk–logged
+Sólo las operaciones en volumen no se registran.
+o	Simple
+El log de transacciones sólo sirve para soportar las transacciones y regularmente es truncado.
+
+Alcance
+•	El alcance de una copia de seguridad define la porción de la base de datos cubierta por la copia:
+•	Copia de seguridad de base de datos
+•	Copia de seguridad parcial
+
+Tipos de copia
+•	Describe lo que se incluye dentro de una copia de seguridad:
+o	Copia de seguridad completo (Full)
+o	Copia de seguridad diferencial (Differential)
+o	Copia de seguridad de logs(Transactionlog)
+o	Sólo una copia de la copia de seguridad
+Estrategias
+•	Puede utilizar diferentes estrategias para generar copias de seguridad de una base de datos, entre las cuales pueden estar:
+o	Full backup
+o	Full + Differential backup
+o	Full + Differential + Transaction log backup
+Full backup
+•	Útil para bases de datos pequeñas.
+•	Bases de datos que contienen información de sólo lectura o que sean de fácil recuperación.
+•	Se tiene un único archivo para recuperar la base de datos.
+
+Full + Differential
+•	Útil para bases de datos grandes, pero, donde es permitido la pérdida de algunos datos.
+•	Como los backups que se realizan son diferenciales en su mayoría, éstos se generan más rápido.
+•	Se pueden recuperar los datos hasta la fecha del último backup diferencial.
+Full + Diff + Transactionlog
+•	Útil para bases de datos de gran volumen de transacciones y que no permite la pérdida de datos.
+•	Es posible que se puedan restaurar los datos hasta la fecha de ocurrido el desastre o pérdida de datos.
+•	Se necesitan realizar copias de los archivos de log de transacciones.
